@@ -1,0 +1,28 @@
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ * @cliArgs --device "CC3200" --package "Default" --part "Default"
+ * @versions {"tool":"1.15.0+2826"}
+ */
+
+/**
+ * These are the peripherals and settings in this configuration
+ */
+const iI2C1       = scripting.addPeripheral("I2C");
+iI2C1.$name       = "MoistureSensor";
+iI2C1.$assign     = "I2C0";
+iI2C1.SCL.$assign = "ball.1";
+iI2C1.SDA.$assign = "ball.2";
+const iUART1      = scripting.addPeripheral("UART");
+iUART1.$name      = "UART0";
+iUART1.RTS.$used  = false;
+iUART1.CTS.$used  = false;
+
+/**
+ * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
+ * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
+ * re-solve from scratch.
+ */
+iUART1.$suggestSolution    = "UART0";
+iUART1.TX.$suggestSolution = "ball.55";
+iUART1.RX.$suggestSolution = "ball.57";
