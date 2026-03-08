@@ -1,14 +1,15 @@
 //*****************************************************************************
 //
-//  Project used to test and find calibration values for SparkFun Qwiic Moisture
-//  Sensor. Periodically displays ADC readings from the sensor by making I2C
-//  requests. Toggles LED on the sensor through I2C commands.
+//  Project used to test ADC readings from the 12-bit ADC on the CC3200.
+//  ADC max voltage should be 1.467V (tolerant up to 1.8V).
 //
 //  Pins Used:
-//      SCL -- Pin 1
-//      SDA -- Pin 2
-//      RX  -- Pin 57
-//      TX  -- Pin 55
+//      ADC_CHN_1 -- Pin 58
+//
+//  Other ADC Pins (Unused), change MACRO for ADC_CHN below to switch
+//      ADC_CHN_0 -- Pin 57
+//      ADC_CHN_2 -- Pin 59
+//      ADC_CHN_3 -- Pin 60
 //
 //*****************************************************************************
 
@@ -30,9 +31,9 @@
 #include "utils.h"
 #include "uart.h"
 
-// Common interface includes
-#include "uart_if.h"
-#include "i2c_if.h"
+// ADC includes
+#include "adc.h"
+#include "hw_adc.h"
 
 #include "pin_mux_config.h"
 
@@ -41,11 +42,9 @@
 //                      MACRO DEFINITIONS
 //*****************************************************************************
 
-// I2C Address + Command Values
-#define MSTR_SNSR_ADDR      0x28    // I2C Address
-#define MSTR_SNSR_READ      0x05    // CMD to get ADC Data
-#define MSTR_SNSR_LED_ON    0x01    // CMD to turn LED on
-#define MSTR_SNSR_LED_OFF   0x00    // CMD to turn LED off
+// ADC Values
+#define ADC_CHN     ADC_CH_1        // ADC Channel used in this test program
+#define ADC_MASK    0x00000FFF      // Used to extract only the ADC value from the CC3200 after bit-shifting down by 2
 
 //*****************************************************************************
 //                 GLOBAL VARIABLES -- Start
@@ -67,39 +66,23 @@ extern uVectorEntry __vector_table;
 //****************************************************************************
 
 /**
-  * @brief Requests and Reads ADC Values from QWIIC Moisture Sensor
-  * @returns two-byte ADC value
+  * @brief Reads from ADC Channel
+  * @param adcChannel the channel to read from
+  * @returns 12 bit ADC value
 **/
-uint16_t ReadMoisture(void) {
-    unsigned char readCMD = (unsigned char)MSTR_SNSR_READ;
-    unsigned char buffer[2];
-    uint16_t readVal;
+unsigned long ReadPhoto(unsigned long adcChannel) {
 
-    I2C_IF_Write(MSTR_SNSR_ADDR, &readCMD, 1, 1);       // Tell moisture sensor that data will be read
-    MAP_UtilsDelay(20000);   // small delay
-    I2C_IF_Read(MSTR_SNSR_ADDR, buffer, 2);      // Read 2 bytes from the moisture sensor
+    // Empty out the FIFO (process should be faster than FIFO getting populated)
+    while (ADCFIFOLvlGet(ADC_BASE, adcChannel)) {
+        ADCFIFORead(ADC_BASE, adcChannel);
+    }
 
-    readVal = buffer[1];    // Read upper bits
-    readVal <<= 8;          // Shift upper bits
-    readVal |= buffer[0];   // Add lower bits
+    // Wait for FIFO to get populated and then read from it (blocking statement but it should be fast enough for most practices)
+    while (ADCFIFOLvlGet(ADC_BASE, adcChannel) == 0) {}
+    unsigned long val = ADCFIFORead(ADC_BASE, adcChannel);
 
-    return readVal;
-}
-
-/**
-  * @brief Turns the QWIIC Moisture Sensor LED On
-**/
-void MoistureLEDON(void) {
-    unsigned char LEDCMD = (unsigned char)MSTR_SNSR_LED_ON;
-    I2C_IF_Write(MSTR_SNSR_ADDR, &LEDCMD, 1, 1);
-}
-
-/**
-  * @brief Turns the QWIIC Moisture Sensor LED Off
-**/
-void MoistureLEDOFF(void) {
-    unsigned char LEDCMD = (unsigned char)MSTR_SNSR_LED_OFF;
-    I2C_IF_Write(MSTR_SNSR_ADDR, &LEDCMD, 1, 1);
+    // Return ONLY the ADC value (removing reserved and timestamp bits)
+    return (val >> 2) & ADC_MASK;
 }
 
 //*****************************************************************************
@@ -137,7 +120,7 @@ BoardInit(void)
 
 //*****************************************************************************
 //
-//! Read Moisture Sensor ADC through I2C periodically
+//! Read Photoresistor through CC3200 ADC
 //!
 //! \param  None
 //!
@@ -151,18 +134,15 @@ void main()
     BoardInit();
     PinMuxConfig();
     
-    // Configuring UART
-    InitTerm();
+    // Initialize ADC
+    MAP_ADCEnable(ADC_BASE);
+    MAP_ADCChannelEnable(ADC_BASE, ADC_CHN);
     
-    // I2C Init
-    I2C_IF_Open(I2C_MASTER_MODE_STD);
-
-    // Read Moisture Level ADC and Toggle LED on Sensor
+    // Read Photresistor ADC periodically
     while (1) {
-        Report("moisture adc: %d\r\n", ReadMoisture());
-        MoistureLEDON();
-        MAP_UtilsDelay(20000000);
-        MoistureLEDOFF();
+        printf("photoresistor adc: %d\r\n", ReadPhoto(ADC_CHN));
         MAP_UtilsDelay(20000000);
     }
 }
+
+

@@ -1,0 +1,17 @@
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ * @cliArgs --device "CC3200" --package "Default" --part "Default"
+ * @versions {"tool":"1.15.0+2826"}
+ */
+
+/**
+ * These are the peripherals and settings in this configuration
+ */
+const iADC1       = scripting.addPeripheral("ADC");
+iADC1.$name       = "ADC_Channel";
+iADC1.$assign     = "ADC0";
+iADC1.CH0.$assign = "ball.57";
+iADC1.CH1.$assign = "ball.58";
+iADC1.CH2.$assign = "ball.59";
+iADC1.CH3.$assign = "ball.60";
