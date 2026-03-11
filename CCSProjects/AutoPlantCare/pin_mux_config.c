@@ -36,7 +36,7 @@
 //
 //*****************************************************************************
 
-// This file was automatically generated on 3/11/2026 at 3:02:11 AM
+// This file was automatically generated on 3/11/2026 at 10:04:13 AM
 // by TI PinMux version 1.15.0+2826
 //
 //*****************************************************************************
@@ -64,12 +64,9 @@ void PinMuxConfig(void)
     PinModeSet(PIN_18, PIN_MODE_0);
     PinModeSet(PIN_21, PIN_MODE_0);
     PinModeSet(PIN_45, PIN_MODE_0);
-    PinModeSet(PIN_52, PIN_MODE_0);
     PinModeSet(PIN_53, PIN_MODE_0);
     PinModeSet(PIN_55, PIN_MODE_0);
     PinModeSet(PIN_57, PIN_MODE_0);
-    PinModeSet(PIN_59, PIN_MODE_0);
-    PinModeSet(PIN_60, PIN_MODE_0);
     PinModeSet(PIN_64, PIN_MODE_0);
     
     //
@@ -78,9 +75,9 @@ void PinMuxConfig(void)
     PRCMPeripheralClkEnable(PRCM_ADC, PRCM_RUN_MODE_CLK);
     PRCMPeripheralClkEnable(PRCM_GPIOA0, PRCM_RUN_MODE_CLK);
     PRCMPeripheralClkEnable(PRCM_GPIOA1, PRCM_RUN_MODE_CLK);
+    PRCMPeripheralClkEnable(PRCM_GPIOA4, PRCM_RUN_MODE_CLK);
     PRCMPeripheralClkEnable(PRCM_I2CA0, PRCM_RUN_MODE_CLK);
     PRCMPeripheralClkEnable(PRCM_GSPI, PRCM_RUN_MODE_CLK);
-    PRCMPeripheralClkEnable(PRCM_TIMERA0, PRCM_RUN_MODE_CLK);
 
     //
     // Configure PIN_58 for ADC0 ADC_CH1
@@ -88,10 +85,20 @@ void PinMuxConfig(void)
     PinTypeADC(PIN_58, PIN_MODE_255);
 
     //
-    // Configure PIN_50 for GPIO Input
+    // Configure PIN_59 for ADC0 ADC_CH2
+    //
+    PinTypeADC(PIN_59, PIN_MODE_255);
+
+    //
+    // Configure PIN_60 for ADC0 ADC_CH3
+    //
+    PinTypeADC(PIN_60, PIN_MODE_255);
+
+    //
+    // Configure PIN_50 for GPIO Output
     //
     PinTypeGPIO(PIN_50, PIN_MODE_0, false);
-    GPIODirModeSet(GPIOA0_BASE, 0x1, GPIO_DIR_MODE_IN);
+    GPIODirModeSet(GPIOA0_BASE, 0x1, GPIO_DIR_MODE_OUT);
 
     //
     // Configure PIN_61 for GPIO Output
@@ -110,6 +117,12 @@ void PinMuxConfig(void)
     //
     PinTypeGPIO(PIN_63, PIN_MODE_0, false);
     GPIODirModeSet(GPIOA1_BASE, 0x1, GPIO_DIR_MODE_OUT);
+
+    //
+    // Configure PIN_52 for GPIO Output
+    //
+    PinTypeGPIO(PIN_52, PIN_MODE_0, false);
+    GPIODirModeSet(GPIOA4_BASE, 0x1, GPIO_DIR_MODE_OUT);
 
     //
     // Configure PIN_01 for I2C0 I2C_SCL
@@ -135,9 +148,4 @@ void PinMuxConfig(void)
     // Configure PIN_07 for SPI0 GSPI_MOSI
     //
     PinTypeSPI(PIN_07, PIN_MODE_7);
-
-    //
-    // Configure PIN_17 for TimerPWM0 GT_PWM00
-    //
-    PinTypeTimer(PIN_17, PIN_MODE_5);
 }

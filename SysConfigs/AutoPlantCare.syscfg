@@ -13,10 +13,11 @@ iADC1.$name               = "Photoresistor_ADC";
 iADC1.$assign             = "ADC0";
 iADC1.CH0.$used           = false;
 iADC1.CH1.$assign         = "ball.58";
-iADC1.CH2.$used           = false;
-iADC1.CH3.$used           = false;
+iADC1.CH2.$assign         = "ball.59";
+iADC1.CH3.$assign         = "ball.60";
 const iGPIO1              = scripting.addPeripheral("GPIO");
 iGPIO1.$name              = "GPIO_Pins";
+iGPIO1.GPIO00.io          = "output";
 iGPIO1.GPIO00.$assign     = "ball.50";
 iGPIO1.GPIO01.$used       = false;
 iGPIO1.GPIO02.$used       = false;
@@ -46,7 +47,8 @@ iGPIO1.GPIO29.$used       = false;
 iGPIO1.GPIO25.$used       = false;
 iGPIO1.GPIO30.$used       = false;
 iGPIO1.GPIO31.$used       = false;
-iGPIO1.GPIO32.$used       = false;
+iGPIO1.GPIO32.io          = "output";
+iGPIO1.GPIO32.$assign     = "ball.52";
 const iI2C1               = scripting.addPeripheral("I2C");
 iI2C1.$name               = "MoistureSensor_I2C";
 iI2C1.$assign             = "I2C0";
@@ -62,6 +64,7 @@ const iTimerPWM1          = scripting.addPeripheral("TimerPWM");
 iTimerPWM1.$name          = "MyTimerPWM1";
 iTimerPWM1.$assign        = "TimerPWM0";
 iTimerPWM1.GT_PWM.$assign = "ball.17";
+iTimerPWM1.GT_PWM.$used   = false;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

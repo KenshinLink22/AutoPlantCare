@@ -40,10 +40,31 @@
 
 #define SPI_IF_BIT_RATE  1000000
 
+// Moisture Sensor
+#define MSTR_SNSR_HIGH      1023    // Fully Dry in the Air -- Calibration
+#define MSTR_SNSR_LOW       230     // Submerged Electrodes -- Calibration
+#define MSTR_SNSR_ADDR      0x28    // I2C Address
+#define MSTR_SNSR_READ      0x05    // CMD to get ADC Data
+#define MSTR_SNSR_LED_ON    0x01    // CMD to turn LED on
+#define MSTR_SNSR_LED_OFF   0x00    // CMD to turn LED off
+
+// Water Pump
+#define PUMP_BASE   GPIOA0_BASE     // GPIO base for water pump
+#define PUMP_PIN    GPIO_PIN_0      // Pin to toggle on/off for water pump
+
 // SSD1351 OLED
 #define RstPin  0x40        // Pin 61
 #define CSPin   0x80        // Pin 62
 #define DCPin   0x1         // Pin 63
+
+// UI
+#define TXT_SZ              1
+#define TXT_CLR             WHITE
+#define BG_CLR              BLACK
+#define TRGT_WATER_CURSOR   0
+#define TRGT_LIGHT_CURSOR   12
+#define ACT_WATER_CURSOR    24
+#define ACT_LIGHT_CURSOR    48
 
 //*****************************************************************************
 //                 GLOBAL VARIABLES -- Start
@@ -56,6 +77,16 @@ extern void (* const g_pfnVectors[])(void);
 #if defined(ewarm)
 extern uVectorEntry __vector_table;
 #endif
+
+static const char targetWaterDisp[100] = "Minimum VWC:  %d%%";
+static const char targetLightDisp[100] = "Max Light Level: %s";
+static const char actualWaterDisp[100] = "Actual VWC: %d%";
+static const char actualLightDisp[100] = "Actual Light: %s";
+
+static const char *lightLevels[] = { "Soft", "Ambient", "Moderate", "Bright", "Intense" };
+
+static volatile minVWC;
+
 //*****************************************************************************
 //                 GLOBAL VARIABLES -- End
 //*****************************************************************************
@@ -66,16 +97,66 @@ extern uVectorEntry __vector_table;
 //                      LOCAL DEFINITION                                   
 //*****************************************************************************
 
-//*****************************************************************************
-//
-//! Application startup display on UART
-//!
-//! \param  none
-//!
-//! \return none
-//!
-//*****************************************************************************
+/**
+  * @brief Requests and Reads ADC Values from QWIIC Moisture Sensor
+  * @returns two-byte ADC value
+**/
+uint16_t ReadMoisture(void) {
+    unsigned char readCMD = (unsigned char)MSTR_SNSR_READ;
+    unsigned char buffer[2];
+    uint16_t readVal;
 
+    I2C_IF_Write(MSTR_SNSR_ADDR, &readCMD, 1, 1);       // Tell moisture sensor that data will be read
+    MAP_UtilsDelay(20000);   // small delay
+    I2C_IF_Read(MSTR_SNSR_ADDR, buffer, 2);      // Read 2 bytes from the moisture sensor
+
+    readVal = buffer[1];    // Read upper bits
+    readVal <<= 8;          // Shift upper bits
+    readVal |= buffer[0];   // Add lower bits
+
+    return readVal;
+}
+
+/**
+  * @brief Turns the QWIIC Moisture Sensor LED On
+**/
+void MoistureLEDON(void) {
+    unsigned char LEDCMD = (unsigned char)MSTR_SNSR_LED_ON;
+    I2C_IF_Write(MSTR_SNSR_ADDR, &LEDCMD, 1, 1);
+}
+
+/**
+  * @brief Turns the QWIIC Moisture Sensor LED Off
+**/
+void MoistureLEDOFF(void) {
+    unsigned char LEDCMD = (unsigned char)MSTR_SNSR_LED_OFF;
+    I2C_IF_Write(MSTR_SNSR_ADDR, &LEDCMD, 1, 1);
+}
+
+unsigned int GetVWC(void) {
+    unsigned int ADCRange = MSTR_SNSR_HIGH - MSTR_SNSR_LOW;
+    unsigned int ADCVal = (int)ReadMoisture();
+
+    return 100 - ((100 * (ADCVal - MSTR_SNSR_LOW)) / (ADCRange));
+}
+
+void ModulateMoisture(void) {
+    MoistureLEDON();
+    unsigned int currVWC = GetVWC();
+
+    if (currVWC < minVWC) {
+        // Enable Water Pump if VWC is Below Minimum
+        MAP_GPIOPinWrite(PUMP_BASE, PUMP_PIN, PUMP_PIN);
+    }
+
+    // Wait for VWC to Pass Minimum if necessary
+    while (GetVWC() < minVWC);
+
+    // Ensure Water Pump is Disabled
+    MAP_GPIOPinWrite(PUMP_BASE, PUMP_PIN, 0x00);
+
+    MoistureLEDOFF();
+}
 
 //*****************************************************************************
 //
@@ -138,9 +219,14 @@ static void SPIInit(void) {
 //*****************************************************************************
 void main()
 {
+    minVWC = 12;
+
     // Initialize board configurations
     BoardInit();
     PinMuxConfig();
+
+    // I2C Init
+    I2C_IF_Open(I2C_MASTER_MODE_STD);
 
     // Initialize SPI and SSD1351 OLED
     SPIInit();
