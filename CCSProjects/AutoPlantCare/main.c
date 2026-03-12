@@ -50,12 +50,28 @@
 
 // Water Pump
 #define PUMP_BASE   GPIOA0_BASE     // GPIO base for water pump
-#define PUMP_PIN    GPIO_PIN_0      // Pin to toggle on/off for water pump
+#define PUMP_PIN    GPIO_PIN_0      // Pin to toggle on/off for water pump -- Pin 50
+
+// Photoresistors
+#define PHTRST_NUM      2           // Number of Photoresistors in Use
+#define PHTRST_ADC_MAX  4096        // Max ADC Value (Intense Light)
+#define PHTRST_NORTH    ADC_CH_1    // ADC for North Photoresistor -- Pin 58
+#define PHTRST_WEST     ADC_CH_2    // ADC for West Photoresistor  -- Pin 59
+#define ADC_MASK        0x00000FFF  // Used to extract only the ADC value from the CC3200 after bit-shifting down by 2
+
+// Rotary Motor
+#define MOTOR_BASE     GPIOA0_BASE  // GPIO base for DC motor
+#define MOTOR_PIN      GPIO_PIN_5   // Pin to toggle DC motor -- Pin 60
+
+// End Stops
+#define ENDSTP_BASE     GPIOA1_BASE // GPIO base for end stops
+#define ENDSTP_NORTH    GPIO_PIN_4  // Pin for North Endstop Button -- Pin 3
+#define ENDSTP_WEST     GPIO_PIN_5  // Pin for West Endstop Button  -- Pin 4
 
 // SSD1351 OLED
-#define RstPin  0x40        // Pin 61
-#define CSPin   0x80        // Pin 62
-#define DCPin   0x1         // Pin 63
+#define RstPin  0x40        // Reset Pin for SSD1351 -- Pin 61
+#define CSPin   0x80        // CS Pin for SSD3151    -- Pin 62
+#define DCPin   0x1         // DC Pin for SSD1351    -- Pin 63
 
 // UI
 #define TXT_SZ              1
@@ -84,8 +100,16 @@ static const char actualWaterDisp[100] = "Actual VWC: %d%";
 static const char actualLightDisp[100] = "Actual Light: %s";
 
 static const char *lightLevels[] = { "Soft", "Ambient", "Moderate", "Bright", "Intense" };
+static unsigned long phtresistors[PHTRST_NUM] = { PHTRST_NORTH, PHTRST_WEST };
+static unsigned long endstops[PHTRST_NUM] = { ENDSTP_NORTH, ENDSTP_WEST };
+static unsigned long location;
 
-static volatile minVWC;
+static volatile unsigned int minVWC;
+static volatile unsigned int maxLight;
+
+static volatile unsigned int currVWC;
+static volatile unsigned int screenLoc;
+static volatile unsigned int screenDest;
 
 //*****************************************************************************
 //                 GLOBAL VARIABLES -- End
@@ -142,7 +166,7 @@ unsigned int GetVWC(void) {
 
 void ModulateMoisture(void) {
     MoistureLEDON();
-    unsigned int currVWC = GetVWC();
+    currVWC = GetVWC();
 
     if (currVWC < minVWC) {
         // Enable Water Pump if VWC is Below Minimum
@@ -156,6 +180,62 @@ void ModulateMoisture(void) {
     MAP_GPIOPinWrite(PUMP_BASE, PUMP_PIN, 0x00);
 
     MoistureLEDOFF();
+}
+
+/**
+  * @brief Reads from ADC Channel
+  * @param adcChannel the channel to read from
+  * @returns 12 bit ADC value
+**/
+unsigned long ReadPhoto(unsigned long adcChannel) {
+
+    // Empty out the FIFO (process should be faster than FIFO getting populated)
+    while (ADCFIFOLvlGet(ADC_BASE, adcChannel)) {
+        ADCFIFORead(ADC_BASE, adcChannel);
+    }
+
+    // Wait for FIFO to get populated and then read from it (blocking statement but it should be fast enough for most practices)
+    while (ADCFIFOLvlGet(ADC_BASE, adcChannel) == 0) {}
+    unsigned long val = ADCFIFORead(ADC_BASE, adcChannel);
+
+    // Return ONLY the ADC value (removing reserved and timestamp bits)
+    return (val >> 2) & ADC_MASK;
+}
+
+void ModulateLight() {
+    // Read in each photoresistor
+    unsigned long northLight = ReadPhoto(PHTRST_NORTH);
+    unsigned long westLight = ReadPhoto(PHTRST_WEST);
+
+    // Set the screen destination to block maximum light if above maximum,
+    // otherwise, set it to block the minimum source of light
+    if (northLight > maxLight) { screenDest = ENDSTP_NORTH; }
+    else if (westLight > maxLight) { screenDest = ENDSTP_WEST; }
+    else if (northLight > westLight) { screenDest = ENDSTP_WEST; }
+    else if (westLight > northLight) { screenDest = ENDSTP_NORTH; }
+
+    // Enable DC Motor if screen needs to be moved
+    if (screenDest != screenLoc) { MAP_GPIOPinWrite(MOTOR_BASE, MOTOR_PIN, MOTOR_PIN); printf("motor move\n"); }
+
+    while (screenDest != screenLoc);
+
+    MAP_GPIOPinWrite(MOTOR_BASE, MOTOR_PIN, 0x0);
+}
+
+//****************************************************************************
+//                      HANDLER DEFINITIONS
+//****************************************************************************
+
+void end_stop_handler(void) {
+
+    // Get the interrupt status and clear it
+    unsigned long status = MAP_GPIOIntStatus(ENDSTP_BASE, true);
+    MAP_GPIOIntClear(GPIOA1_BASE, status);
+
+    // Check which endstop was triggered -> correlates to the location of the screen
+    if (status & ENDSTP_NORTH) { screenLoc = ENDSTP_NORTH; }
+    else if (status & ENDSTP_WEST) { screenLoc = ENDSTP_WEST; }
+
 }
 
 //*****************************************************************************
@@ -220,6 +300,9 @@ static void SPIInit(void) {
 void main()
 {
     minVWC = 12;
+    maxLight = 3700;
+    screenLoc = ENDSTP_NORTH;
+    screenDest = screenLoc;
 
     // Initialize board configurations
     BoardInit();
@@ -227,6 +310,18 @@ void main()
 
     // I2C Init
     I2C_IF_Open(I2C_MASTER_MODE_STD);
+
+    // Initialize ADC
+    MAP_ADCEnable(ADC_BASE);
+    MAP_ADCChannelEnable(ADC_BASE, PHTRST_NORTH);
+    MAP_ADCChannelEnable(ADC_BASE, PHTRST_WEST);
+
+    // GPIO Interrupt Init
+    GPIOIntTypeSet(ENDSTP_BASE, ENDSTP_NORTH, GPIO_RISING_EDGE);
+    GPIOIntTypeSet(ENDSTP_BASE, ENDSTP_WEST, GPIO_RISING_EDGE);
+    GPIOIntRegister(ENDSTP_BASE, end_stop_handler);
+    GPIOIntEnable(ENDSTP_BASE, ENDSTP_NORTH);
+    GPIOIntEnable(ENDSTP_BASE, ENDSTP_WEST);
 
     // Initialize SPI and SSD1351 OLED
     SPIInit();
