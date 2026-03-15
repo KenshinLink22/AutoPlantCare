@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto Plant Care - EEC 172</title>
     <style>
-        /* Modern, clean CSS to satisfy the "Aesthetics" rubric requirement */
+        /* Modern CSS for the "Aesthetics" rubric requirement */
         :root {
             --primary-color: #026670;
             --secondary-color: #9FEDD7;
             --text-color: #333333;
             --bg-color: #FDFDFD;
-            --code-bg: #F4F4F4;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -39,17 +38,13 @@
         main {
             max-width: 900px;
             margin: 2rem auto;
-            padding: 0 2rem;
+            padding: 0 2rem 2rem 2rem;
             background: white;
             box-shadow: 0 0 20px rgba(0,0,0,0.05);
             border-radius: 8px;
         }
         section {
-            padding: 2rem 0;
-            border-bottom: 1px solid #EAEAEA;
-        }
-        section:last-child {
-            border-bottom: none;
+            padding: 2rem 0 0 0;
         }
         h2 {
             color: var(--primary-color);
@@ -78,40 +73,6 @@
             width: 100%;
             height: 100%;
         }
-        .img-container {
-            text-align: center;
-            margin: 2rem 0;
-        }
-        .img-container img {
-            max-width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 5px;
-        }
-        /* Bill of Materials Table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        th, td {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        code {
-            background-color: var(--code-bg);
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-family: Consolas, monospace;
-        }
         footer {
             text-align: center;
             padding: 2rem;
@@ -125,144 +86,31 @@
     <header>
         <h1>Auto Plant Care</h1>
         <p>A Standalone Plant Monitoring & Balancing System</p>
-        <p><strong>By: Nathan Leung & Angel Hernandez Vega</strong></p>
+        <p><strong>By: Nathan Leung & Angel Hernandez Vega [cite: 2, 225]</strong></p>
         <p>EEC 172 - Embedded Systems</p>
     </header>
 
     <main>
         <section id="description">
-            <h2>1. Project Description</h2>
-            <p>The Auto Plant Care system is a standalone plant monitoring and balancing control system designed for plant owners who may be away from home for extended periods. It actively monitors basic factors of plant care, such as the volumetric water content (VWC) of the soil and ambient light intensity.</p>
-            <p>Unlike simple passive monitors, this system physically interacts with the environment. It utilizes a motorized dual-film polaroid screen to dynamically regulate light exposure, and an automated water pump to maintain soil moisture. The user can interact with the system locally using an IR remote to set the desired moisture threshold, which is displayed on an OLED screen. Furthermore, the system is connected to the cloud via AWS IoT and SNS, providing real-time email push notifications to the user whenever the plant is successfully watered.</p>
+            <h2>Project Description & Documentation</h2>
+            <p>The Auto Plant Care system is a plant monitoring and balancing control system[cite: 5]. It monitors basic factors of plant care, such as moisture level of the soil and light intensity[cite: 6]. This product is aimed towards plant lovers who at times may be unable to care for their plant for an extended period of time, be it vacations, work trips, etc[cite: 9].</p>
+            <p>Unlike simple passive monitors, this system physically interacts with the environment. It utilizes a motorized dual-film polaroid screen to dynamically regulate light exposure, and an automated water pump to maintain soil moisture. The system is connected to the cloud via AWS IoT and SNS, providing real-time email push notifications to the user whenever the plant is successfully watered.</p>
+            
+            <h3>System Reproducibility</h3>
+            <p>To reproduce this system, the CC3200-LAUNCHXL serves as the core system, interfacing with all components[cite: 38]. The hardware and software integrate as follows:</p>
+            <ul>
+                <li><strong>Moisture Control:</strong> The moisture sensor communicates with the CC3200 through I2C commands[cite: 39]. If the actual moisture falls below the target threshold set by the IR remote, the water pump is controlled by GPIO output pins toggling a relay to toggle the pump[cite: 40]. Once the target is reached, the pump shuts off and an HTTP POST request is sent over TLS to AWS API Gateway, triggering an SNS email notification.</li>
+                <li><strong>Light Control:</strong> A series of photoresistors are used to monitor light levels around the potted plant, which serve as GPIO inputs for the CC3200[cite: 41]. If light exceeds the maximum threshold, the servo motor and relay interfacing DC motor are used to adjust the polaroids' position and relative angle through GPIO outputs from the CC3200[cite: 42].</li>
+                <li><strong>User Interface:</strong> The board also interfaces with an OLED display through SPI to depict the measured and desired moisture and light levels[cite: 43]. The user adjusts the target moisture using the Volume Up/Down buttons on an IR remote, decoded via a SysTick timer.</li>
+            </ul>
         </section>
 
         <section id="demo">
-            <h2>2. Video Demonstration</h2>
+            <h2>Video Demonstration</h2>
             <p>Below is a demonstration of the final prototype showcasing the IR remote configuration, OLED interface, dynamic light modulation, automated watering, and AWS email notifications.</p>
             <div class="video-container">
                 <iframe src="https://drive.google.com/file/d/1mbNjCHvq8f3Mra0ZWfMKmfFeTukN3p6S/preview" width="640" height="480" allow="autoplay" allowfullscreen></iframe>
             </div>
-        </section>
-
-        <section id="design">
-            <h2>3. Design</h2>
-            
-            <h3>Functional Specification</h3>
-            <p>The system operates in a continuous polling loop, maintaining both moisture and light levels:</p>
-            <ul>
-                <li><strong>Moisture Control:</strong> The system reads I2C data from a soil moisture sensor. If the actual moisture falls below the target moisture (configured dynamically via IR remote), a GPIO pin triggers a relay to power a DC water pump. Once the target is reached, the pump shuts off and an HTTP POST request is sent via TLS to an AWS API endpoint, triggering an SNS email alert to the user.</li>
-                <li><strong>Light Control:</strong> Two photoresistors read ambient light levels via the CC3200's ADC channels. If the light exceeds the maximum threshold, a DC motor adjusts the position of a polarized screen to block the strongest light source, utilizing end-stops for positional feedback.</li>
-            </ul>
-
-            <h3>System Architecture</h3>
-            <div class="img-container">
-                <img src="block_diagram.png" alt="System Architecture Block Diagram">
-                <p><em>Figure 1: System Architecture Diagram</em></p>
-            </div>
-            <p>The TI CC3200-LAUNCHXL serves as the core microcontroller. The system features the following subsystems:</p>
-            <ul>
-                <li><strong>Inputs:</strong> I2C SparkFun Soil Moisture Sensor, 2x ADC Photoresistors, GPIO IR Receiver, 2x GPIO End-stop switches.</li>
-                <li><strong>Outputs:</strong> SPI Adafruit SSD1351 OLED Display, GPIO Relay (Water Pump), GPIO Relay (DC Motor).</li>
-                <li><strong>Cloud:</strong> 802.11 b/g/n Wi-Fi connection to AWS IoT Core (REST API) routed to AWS Simple Notification Service (SNS).</li>
-            </ul>
-        </section>
-
-        <section id="implementation">
-            <h2>4. Implementation</h2>
-            <p><em>Detail how each major block in the system architecture was implemented in hardware and/or software. Provide enough detail that a fellow student could reproduce your project without seeing your source code.</em></p>
-            
-            <h3>Hardware Setup & Circuitry</h3>
-            <p>[Describe how you wired the relays, where the 5V power for the pump/motor came from, and how the polaroid screen was mechanically constructed.]</p>
-            <div class="img-container">
-                <img src="schematic.png" alt="Circuit Schematic">
-                <p><em>Figure 2: Circuit Wiring Schematic</em></p>
-            </div>
-
-            <h3>Software Integration</h3>
-            <p>[Describe your SysTick IR decoding logic, your polling loop, the I2C read sequences, and how you managed the blocking Wi-Fi functions without freezing the screen.]</p>
-
-            <h3>AWS Cloud Routing</h3>
-            <p>[Describe the TLS handshake process, how the JSON payload is formatted in C using sprintf, and how the AWS IoT Rule SQL query extracts the message to trigger the SNS email.]</p>
-        </section>
-
-        <section id="challenges">
-            <h2>5. Challenges</h2>
-            <p>During the development of the Auto Plant Care system, several significant challenges were encountered and resolved:</p>
-            <ul>
-                <li><strong>Hardware Pin Conflicts:</strong> During the integration phase, the SPI clock for the OLED display conflicted with the GPIO input needed for the IR sensor. Because the default SPI CLK (Pin 5) was damaged on the board, it was re-routed to Pin 45 via pin multiplexing. However, Pin 45 was later needed for the IR receiver. This was resolved by meticulously mapping the IR receiver to an isolated GPIO (Pin 18) and utilizing the CC3200 SysConfig tool to ensure peripherals did not overlap.</li>
-                <li><strong>AWS Integration & JSON Parsing:</strong> The initial AWS IoT integration resulted in successful HTTP 200 OK responses, but the SNS emails were not triggering. It was discovered that the AWS IoT Rule SQL query (<code>SELECT state.desired.default</code>) mismatched the JSON key generated by the C code (<code>state.desired.var</code>). Ensuring strict key-value parity across the embedded C payload and the cloud SQL query resolved the silent failures.</li>
-            </ul>
-        </section>
-
-        <section id="future-work">
-            <h2>6. Future Work</h2>
-            <p>If given more time, several improvements could be made to the system:</p>
-            <ul>
-                <li>Implementing a water-level sensor in the reservoir tank to send an AWS email alert when the pump is running out of water.</li>
-                <li>Creating a custom web-dashboard using AWS Amplify to log historical moisture and light data over time, rather than just sending email alerts.</li>
-                <li>Refining the mechanical housing using 3D printed parts for a more robust polaroid screen rotation mechanism.</li>
-            </ul>
-        </section>
-
-        <section id="bom">
-            <h2>7. Bill of Materials</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Source</th>
-                        <th>Cost</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>TI CC3200-LAUNCHXL</td>
-                        <td>Lab Provided</td>
-                        <td>$0.00</td>
-                    </tr>
-                    <tr>
-                        <td>Adafruit SSD1351 OLED Display</td>
-                        <td>Lab Provided</td>
-                        <td>$0.00</td>
-                    </tr>
-                    <tr>
-                        <td>SparkFun Qwiic Soil Moisture Sensor</td>
-                        <td>Amazon</td>
-                        <td>$9.95</td>
-                    </tr>
-                    <tr>
-                        <td>Photoresistors (50 Pack)</td>
-                        <td>Amazon</td>
-                        <td>$5.99</td>
-                    </tr>
-                    <tr>
-                        <td>Relay Module (4 Pack)</td>
-                        <td>Amazon</td>
-                        <td>$6.99</td>
-                    </tr>
-                    <tr>
-                        <td>Mini Submersible Water Pump</td>
-                        <td>Amazon</td>
-                        <td>$9.96</td>
-                    </tr>
-                    <tr>
-                        <td>Polarized Film Sheets</td>
-                        <td>Amazon</td>
-                        <td>$13.98</td>
-                    </tr>
-                    <tr>
-                        <td>Container (6qt Clear Storage Box)</td>
-                        <td>Target</td>
-                        <td>$1.25</td>
-                    </tr>
-                    <tr>
-                        <td>DC Motors & Servo Motor</td>
-                        <td>Pre-owned</td>
-                        <td>$0.00</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p><strong>Total Out-of-Pocket Cost: $48.12</strong></p>
         </section>
 
     </main>
