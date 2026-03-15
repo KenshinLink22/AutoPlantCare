@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto Plant Care - EEC 172</title>
     <style>
-        /* Modern CSS for the "Aesthetics" rubric requirement */
+        /* Modern CSS for the Aesthetics requirement */
         :root {
             --primary-color: #026670;
             --secondary-color: #9FEDD7;
@@ -86,22 +86,22 @@
     <header>
         <h1>Auto Plant Care</h1>
         <p>A Standalone Plant Monitoring & Balancing System</p>
-        <p><strong>By: Nathan Leung & Angel Hernandez Vega [cite: 2, 225]</strong></p>
+        <p><strong>By: Nathan Leung & Angel Hernandez Vega</strong></p>
         <p>EEC 172 - Embedded Systems</p>
     </header>
 
     <main>
         <section id="description">
             <h2>Project Description & Documentation</h2>
-            <p>The Auto Plant Care system is a plant monitoring and balancing control system[cite: 5]. It monitors basic factors of plant care, such as moisture level of the soil and light intensity[cite: 6]. This product is aimed towards plant lovers who at times may be unable to care for their plant for an extended period of time, be it vacations, work trips, etc[cite: 9].</p>
+            <p>The Auto Plant Care system is a plant monitoring and balancing control system. It monitors basic factors of plant care, such as moisture level of the soil and light intensity. This product is aimed towards plant lovers who at times may be unable to care for their plant for an extended period of time, be it vacations, work trips, etc.</p>
             <p>Unlike simple passive monitors, this system physically interacts with the environment. It utilizes a motorized dual-film polaroid screen to dynamically regulate light exposure, and an automated water pump to maintain soil moisture. The system is connected to the cloud via AWS IoT and SNS, providing real-time email push notifications to the user whenever the plant is successfully watered.</p>
             
             <h3>System Reproducibility</h3>
-            <p>To reproduce this system, the CC3200-LAUNCHXL serves as the core system, interfacing with all components[cite: 38]. The hardware and software integrate as follows:</p>
+            <p>To reproduce this system, the CC3200-LAUNCHXL serves as the core system, interfacing with all components. The hardware and software integrate as follows:</p>
             <ul>
-                <li><strong>Moisture Control:</strong> The moisture sensor communicates with the CC3200 through I2C commands[cite: 39]. If the actual moisture falls below the target threshold set by the IR remote, the water pump is controlled by GPIO output pins toggling a relay to toggle the pump[cite: 40]. Once the target is reached, the pump shuts off and an HTTP POST request is sent over TLS to AWS API Gateway, triggering an SNS email notification.</li>
-                <li><strong>Light Control:</strong> A series of photoresistors are used to monitor light levels around the potted plant, which serve as GPIO inputs for the CC3200[cite: 41]. If light exceeds the maximum threshold, the servo motor and relay interfacing DC motor are used to adjust the polaroids' position and relative angle through GPIO outputs from the CC3200[cite: 42].</li>
-                <li><strong>User Interface:</strong> The board also interfaces with an OLED display through SPI to depict the measured and desired moisture and light levels[cite: 43]. The user adjusts the target moisture using the Volume Up/Down buttons on an IR remote, decoded via a SysTick timer.</li>
+                <li><strong>Moisture Control:</strong> The moisture sensor communicates with the CC3200 through I2C commands. If the actual moisture falls below the target threshold set by the IR remote, the water pump is controlled by GPIO output pins toggling a relay to toggle the pump. Once the target is reached, the pump shuts off and an HTTP POST request is sent over TLS to AWS API Gateway, triggering an SNS email notification.</li>
+                <li><strong>Light Control:</strong> A series of photoresistors are used to monitor light levels around the potted plant, which serve as GPIO inputs for the CC3200. If light exceeds the maximum threshold, the servo motor and relay interfacing DC motor are used to adjust the polaroids' position and relative angle through GPIO outputs from the CC3200.</li>
+                <li><strong>User Interface:</strong> The board also interfaces with an OLED display through SPI to depict the measured and desired moisture and light levels. The user adjusts the target moisture using the Volume Up/Down buttons on an IR remote, decoded via a SysTick timer.</li>
             </ul>
         </section>
 
