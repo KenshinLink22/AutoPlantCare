@@ -99,7 +99,7 @@
             <p>The CC3200 microcontroller serves as the core system, interfacing with all components. The hardware and software integrate as follows:</p>
             <ul>
                 <li><strong>Moisture Control:</strong> The moisture sensor communicates with the CC3200 through I2C commands. If the actual moisture falls below the target threshold set by the IR remote, the water pump is controlled by GPIO output pins toggling a relay to toggle the pump. Once the target is reached, the pump shuts off and an HTTP POST request is sent through AWS, triggering an SNS email notification.</li>
-                <li><strong>Light Control:</strong> A series of photoresistors are used to monitor light levels around the potted plant, which serve as GPIO inputs for the CC3200. If light exceeds the maximum threshold, the relay interfacing DC motor is used to adjust the polarizeds' position through GPIO outputs from the CC3200.</li>
+                <li><strong>Light Control:</strong> A series of photoresistors are used to monitor light levels around the potted plant, which serve as GPIO inputs for the CC3200. If light exceeds the maximum threshold, the relay interfacing DC motor is used to adjust the polarized screen's position through GPIO outputs from the CC3200.</li>
                 <li><strong>User Interface:</strong> The board also interfaces with an OLED display through SPI to depict the measured and desired moisture and light levels. The user adjusts the target moisture using the Volume Up/Down buttons on an IR remote, decoded via a SysTick timer.</li>
             </ul>
         </section>
